@@ -1,0 +1,7 @@
+{
+    "board": "macchina:sam:m2",
+    "programmer": "AVRISP mkII",
+    "sketch": "M2Smart.ino",
+    "port": "/dev/tty.usbmodem14401",
+    "output": "../build/M2Smart_build"
+}
