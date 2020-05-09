@@ -1,6 +1,5 @@
 #include "Comm.h"
 #include "settings.h"
-#include "BUSDriver.h"
 #include "sys_io.h"
 
 void CommController::setup() {}
@@ -32,21 +31,21 @@ void CommController::sendFrameToUSB(CAN_FRAME &frame, int whichBus) {
     chksum = 0;
     frameOutputBuffer[frameOutputBufferLength++] = chksum;
   } else {
-    _serial.print(micros());
-    _serial.print(" - ");
-    _serial.print(frame.id, HEX);
+    Serial.print(micros());
+    Serial.print(" - ");
+    Serial.print(frame.id, HEX);
     if (frame.extended)
-      _serial.print(" X ");
+      Serial.print(" X ");
     else
-      _serial.print(" S ");
-    _serial.print(whichBus);
-    _serial.print(" ");
-    _serial.print(frame.length);
+      Serial.print(" S ");
+    Serial.print(whichBus);
+    Serial.print(" ");
+    Serial.print(frame.length);
     for (int c = 0; c < frame.length; c++) {
-      _serial.print(" ");
-      _serial.print(frame.data.bytes[c], HEX);
+      Serial.print(" ");
+      Serial.print(frame.data.bytes[c], HEX);
     }
-    _serial.println();
+    Serial.println();
   }
 }
 

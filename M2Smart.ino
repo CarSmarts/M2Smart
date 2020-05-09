@@ -12,7 +12,7 @@
 #include "BUSDriver.h"
 
 //file system on sdcard (HSMCI connected)
-// FileStore FS;
+FileStore FS;
 
 SettingsManager sm;
 BUSDriver driver;
@@ -54,7 +54,7 @@ void loop() {
   update_buttons();
   // driver.loop();
 
-  // comm.loop();
+  comm.loop();
 
   if (digitalRead(Button2) == LOW) {
     // Enable forward mode to update firmware on XBEE
@@ -72,6 +72,11 @@ void loop() {
     }
   }
   
+  for (int loops = 0; Serial.available() && loops < 128; loops++) {
+    rx_byte = Serial.read();
+    SerialUSB.write(rx_byte);
+  }
+
   for (int loops = 0; SerialUSB.available() && loops < 128; loops++) {
     rx_byte = SerialUSB.read();
     if (rx_byte == 'h') {
