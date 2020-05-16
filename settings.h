@@ -147,8 +147,12 @@ public:
   uint8_t LED_LOGGING = RGB_RED;
 
   // starts false, is set true on FS startup by Logger if autoStartLogging is on
-  // TODO: can be enabled disabled manualy by serial commands
+  // can be enabled disabled manualy by serial commands
   boolean fileLoggingEnabled = false;
+
+  boolean xbeeReset = false;
+  boolean xbeePassthroughEnable = false;
+  boolean xbeePassthroughWriteEnable = false;
 
   EEPROMSettings settings;
 

@@ -33,6 +33,7 @@
 
 boolean Logger::SDCardInserted = false;
 boolean Logger::logToggle = false;
+Print & Logger::logOut = SerialUSB;
 
 Logger::LogLevel Logger::logLevel = Logger::Info;
 uint32_t Logger::lastLogTime = 0;
@@ -107,10 +108,10 @@ void Logger::error(const char *message, ...) {
  * Output a comnsole message with a variable amount of parameters
  * printf() style, see Logger::logMessage()
  */
-void Logger::console(const char *message, ...) {
+void Logger::console(Print &out, const char *message, ...) {
   va_list args;
   va_start(args, message);
-  Logger::logMessage(message, args);
+  Logger::logMessage(out, message, args);
   va_end(args);
 }
 
@@ -300,6 +301,11 @@ void Logger::fileRaw(uint8_t *buff, int sz) {
 void Logger::setLoglevel(LogLevel level) { logLevel = level; }
 
 /*
+ * Set the output location for log messages. (default = SerialUSB)
+ */
+void Logger::setLogOut(Print &out) { logOut = out; }
+
+/*
  * Retrieve the current log level.
  */
 Logger::LogLevel Logger::getLogLevel() { return logLevel; }
@@ -341,30 +347,30 @@ boolean Logger::isDebug() { return logLevel == Debug; }
  */
 void Logger::log(LogLevel level, const char *format, va_list args) {
   lastLogTime = millis();
-  SerialUSB.print(lastLogTime);
-  SerialUSB.print(" - ");
+  logOut.print(lastLogTime);
+  logOut.print(" - ");
 
   switch (level) {
   case Debug:
-    SerialUSB.print("DEBUG");
+    logOut.print("DEBUG");
     break;
 
   case Info:
-    SerialUSB.print("INFO");
+    logOut.print("INFO");
     break;
 
   case Warn:
-    SerialUSB.print("WARNING");
+    logOut.print("WARNING");
     break;
 
   case Error:
-    SerialUSB.print("ERROR");
+    logOut.print("ERROR");
     break;
   }
 
-  SerialUSB.print(": ");
+  logOut.print(": ");
 
-  logMessage(format, args);
+  logMessage(logOut, format, args);
 }
 
 /*
@@ -385,7 +391,7 @@ void Logger::log(LogLevel level, const char *format, va_list args) {
  * %t - prints the next parameter as boolean ('T' or 'F')
  * %T - prints the next parameter as boolean ('true' or 'false')
  */
-void Logger::logMessage(const char *format, va_list args) {
+void Logger::logMessage(Print &out, const char *format, va_list args) {
   for (; *format != 0; ++format) {
     if (*format == '%') {
       ++format;
@@ -395,63 +401,63 @@ void Logger::logMessage(const char *format, va_list args) {
       }
 
       if (*format == '%') {
-        SerialUSB.print(*format);
+        out.print(*format);
         continue;
       }
 
       if (*format == 's') {
         register char *s = (char *)va_arg(args, int);
-        SerialUSB.print(s);
+        out.print(s);
         continue;
       }
 
       if (*format == 'd' || *format == 'i') {
-        SerialUSB.print(va_arg(args, int), DEC);
+        out.print(va_arg(args, int), DEC);
         continue;
       }
 
       if (*format == 'f') {
-        SerialUSB.print(va_arg(args, double), 2);
+        out.print(va_arg(args, double), 2);
         continue;
       }
 
       if (*format == 'x') {
-        SerialUSB.print(va_arg(args, int), HEX);
+        out.print(va_arg(args, int), HEX);
         continue;
       }
 
       if (*format == 'X') {
-        SerialUSB.print("0x");
-        SerialUSB.print(va_arg(args, int), HEX);
+        out.print("0x");
+        out.print(va_arg(args, int), HEX);
         continue;
       }
 
       if (*format == 'b') {
-        SerialUSB.print(va_arg(args, int), BIN);
+        out.print(va_arg(args, int), BIN);
         continue;
       }
 
       if (*format == 'B') {
-        SerialUSB.print("0b");
-        SerialUSB.print(va_arg(args, int), BIN);
+        out.print("0b");
+        out.print(va_arg(args, int), BIN);
         continue;
       }
 
       if (*format == 'l') {
-        SerialUSB.print(va_arg(args, long), DEC);
+        out.print(va_arg(args, long), DEC);
         continue;
       }
 
       if (*format == 'c') {
-        SerialUSB.print(va_arg(args, int));
+        out.print(va_arg(args, int));
         continue;
       }
 
       if (*format == 't') {
         if (va_arg(args, int) == 1) {
-          SerialUSB.print("T");
+          out.print("T");
         } else {
-          SerialUSB.print("F");
+          out.print("F");
         }
 
         continue;
@@ -459,19 +465,19 @@ void Logger::logMessage(const char *format, va_list args) {
 
       if (*format == 'T') {
         if (va_arg(args, int) == 1) {
-          SerialUSB.print("TRUE");
+          out.print("TRUE");
         } else {
-          SerialUSB.print("FALSE");
+          out.print("FALSE");
         }
 
         continue;
       }
     }
 
-    SerialUSB.print(*format);
+    out.print(*format);
   }
 
-  SerialUSB.println();
+  out.println();
 }
 
 void Logger::initSDLogging() {

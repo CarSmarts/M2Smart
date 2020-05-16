@@ -2,86 +2,33 @@
 #include "BUSDriver.h"
 #include "Logger.h"
 
-void BUSDriver::setPromiscuousMode() {
-  // By default there are 7 mailboxes for each device that are RX boxes
-  // This sets each mailbox to have an open filter that will accept extended
-  // or standard frames
-  int filter;
-  // extended
-  for (filter = 0; filter < 3; filter++) {
-    Can0.setRXFilter(filter, 0, 0, true);
-    Can1.setRXFilter(filter, 0, 0, true);
-  }
-  // standard
-  for (filter = 3; filter < 7; filter++) {
-    Can0.setRXFilter(filter, 0, 0, false);
-    Can1.setRXFilter(filter, 0, 0, false);
-  }
-}
-
-void BUSDriver::setup() {
-  if (sm.settings.CAN0_Enabled) {
-    if (sm.settings.CAN0ListenOnly) {
-      Can0.setListenOnlyMode(true);
-    } else {
-      Can0.setListenOnlyMode(false);
-    }
-    Can0.enable();
-    Can0.begin(sm.settings.CAN0Speed, 255);
-  } else {
-    Can0.disable();
-  }
-
-  if (sm.settings.CAN1_Enabled) {
-    if (sm.settings.CAN1ListenOnly) {
-      Can1.setListenOnlyMode(true);
-    } else {
-      Can1.setListenOnlyMode(false);
-    }
-    Can1.enable();
-    Can1.begin(sm.settings.CAN1Speed, 255);
-  } else {
-    Can1.disable();
-  }
-
-  setPromiscuousMode();
-
-  if (sm.settings.SWCAN_Enabled) {
-    SWCAN.setupSW(sm.settings.SWCANSpeed);
-    delay(20);
-
-    if (sm.settings.SWCANListenOnly) {
-      SWCAN.setListenOnlyMode(true);
-    } else {
-      SWCAN.setListenOnlyMode(false);
-    }
-    SWCAN.InitFilters(true);
-  } else {
-    SWCAN.InitFilters(false); // set filters to reject all messages
-  }
-}
-
-void BUSDriver::toggleRXLED() {
-  static int counter = 0;
-  counter++;
-  if (counter >= BLINK_SLOWNESS) {
-    counter = 0;
+void DriverBase::toggleRXLED() {
+  rxCounter++;
+  if (rxCounter >= BLINK_SLOWNESS) {
+    rxCounter = 0;
     rxToggle = !rxToggle;
     setLED(sm.LED_CANRX, rxToggle);
   }
 }
 
-void BUSDriver::toggleTXLED() {
-  static int counter = 0;
-  counter++;
-  if (counter >= BLINK_SLOWNESS) {
-    counter = 0;
+void DriverBase::toggleTXLED() {
+  txCounter++;
+  if (txCounter >= BLINK_SLOWNESS) {
+    txCounter = 0;
     txToggle = !txToggle;
     setLED(sm.LED_CANTX, txToggle);
   }
 }
 
-void BUSDriver::writeFrameToFile(CAN_FRAME &frame, int whichBus) {
+void DriverBase::setFrameCallback(frameCallback_t newFrameCallback) {
+  if (newFrameCallback == NULL) {
+    frameCallback = noopFrameCallback;
+  } else {
+    frameCallback = newFrameCallback;
+  }
+}
+
+void DriverBase::writeFrameToFile(CAN_FRAME &frame, int whichBus) {
   uint8_t buff[40];
   // uint8_t temp;
   uint32_t timestamp;
@@ -140,11 +87,64 @@ void BUSDriver::writeFrameToFile(CAN_FRAME &frame, int whichBus) {
   }
 }
 
-void BUSDriver::setFrameCallback(void (*newFrameCallback)(CAN_FRAME &, BUS)) {
-  if (newFrameCallback == NULL) {
-    frameCallback = noopFrameCallback;
+void BUSDriver::setPromiscuousMode() {
+  // By default there are 7 mailboxes for each device that are RX boxes
+  // This sets each mailbox to have an open filter that will accept extended
+  // or standard frames
+  int filter;
+  // extended
+  for (filter = 0; filter < 3; filter++) {
+    Can0.setRXFilter(filter, 0, 0, true);
+    Can1.setRXFilter(filter, 0, 0, true);
+  }
+  // standard
+  for (filter = 3; filter < 7; filter++) {
+    Can0.setRXFilter(filter, 0, 0, false);
+    Can1.setRXFilter(filter, 0, 0, false);
+  }
+}
+
+void BUSDriver::setup() {
+  if (sm.settings.CAN0_Enabled)
+  {
+    if (sm.settings.CAN0ListenOnly) {
+      Can0.setListenOnlyMode(true);
+    } else {
+      Can0.setListenOnlyMode(false);
+    }
+    Can0.enable();
+    Can0.begin(sm.settings.CAN0Speed, 255);
+  }
+  else
+  {
+    Can0.disable();
+  }
+
+  if (sm.settings.CAN1_Enabled) {
+    if (sm.settings.CAN1ListenOnly) {
+      Can1.setListenOnlyMode(true);
+    } else {
+      Can1.setListenOnlyMode(false);
+    }
+    Can1.enable();
+    Can1.begin(sm.settings.CAN1Speed, 255);
   } else {
-    frameCallback = newFrameCallback;
+    Can1.disable();
+  }
+
+  if (sm.settings.SWCAN_Enabled) {
+    SWCAN.setupSW(sm.settings.SWCANSpeed);
+    setSWTranciverMode(SWTRANSCEIVERMODE::NORMAL);
+    delay(20);
+
+    if (sm.settings.SWCANListenOnly) {
+      SWCAN.setListenOnlyMode(true);
+    } else {
+      SWCAN.setListenOnlyMode(false);
+    }
+  } else {
+    SWCAN.Reset();
+    setSWTranciverMode(SWTRANSCEIVERMODE::SLEEP);
   }
 }
 
@@ -167,10 +167,10 @@ void BUSDriver::loop() {
     frameCallback(recived_frame, BUS::BUS1);
   }
 
-  if (SWCAN.GetRXFrame(recived_frame)) {
-    toggleRXLED();
-    frameCallback(recived_frame, BUS::SWBUS);
-  }
+  // if (SWCAN.GetRXFrame(recived_frame)) {
+  //   toggleRXLED();
+  //   frameCallback(recived_frame, BUS::SWBUS);
+  // }
 
   toggleRXLED(); // show that we are still alive
 }

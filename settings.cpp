@@ -10,7 +10,7 @@ void SettingsManager::resetDefaults() {
   settings.CAN1_Enabled = false;
   settings.CAN0ListenOnly = false;
   settings.CAN1ListenOnly = false;
-  settings.SWCAN_Enabled = false;
+  settings.SWCAN_Enabled = true;
   settings.SWCANListenOnly = false; //TODO: Not currently respected or implemented.
   settings.SWCANSpeed = 33333;
   settings.LIN1_Enabled = false;
@@ -21,7 +21,7 @@ void SettingsManager::resetDefaults() {
   sprintf((char *)settings.fileNameExt, "TXT");
   settings.fileNum = 1;
   settings.fileOutputType = CRTD;
-  settings.useBinarySerialComm = false;
+  settings.useBinarySerialComm = true;
   settings.autoStartLogging = false;
   settings.logLevel = 1; //info
   settings.sysType = 0; //CANDUE as default

@@ -18,6 +18,9 @@ void setup_pins() {
   pinMode(DS5, OUTPUT);
   pinMode(DS6, OUTPUT);
 
+  pinMode(XBEE_RST, OUTPUT);
+  pinMode(XBEE_MULT4, OUTPUT);
+
   digitalWrite(SWC_M0, LOW); // Mode 0 for SWCAN
   digitalWrite(SWC_M1, LOW); // mode 1
 
@@ -32,7 +35,7 @@ void setup_pins() {
   digitalWrite(DS6, HIGH);
 }
 
-void initXBEE() {
+void xbeeReset() {
   digitalWrite(DS2, LOW);
   digitalWrite(XBEE_RST, LOW);
   delay(1000);
@@ -40,7 +43,45 @@ void initXBEE() {
   digitalWrite(XBEE_RST, HIGH);
 }
 
+// Enable forward mode to update firmware on XBEE
+void xbeePassthroughLoop() {
+  char rx_byte = 0;
+  SerialUSB.println("Entering infinite loop passthough mode");
+
+  if (sm.xbeePassthroughWriteEnable) {
+    digitalWrite(DS3, LOW);
+    digitalWrite(XBEE_MULT4, LOW);
+    digitalWrite(DS2, LOW);
+    digitalWrite(XBEE_RST, LOW);
+    delay(500);
+
+    digitalWrite(DS2, HIGH);
+    digitalWrite(XBEE_RST, HIGH);
+    delay(200);
+
+    digitalWrite(DS3, HIGH);
+    digitalWrite(XBEE_MULT4, HIGH);
+    digitalWrite(DS2, HIGH);
+    digitalWrite(XBEE_RST, HIGH);
+  }
+
+  while (true) {
+    if (SerialUSB.available() > 0) {
+      rx_byte = SerialUSB.read();
+      Serial.write(rx_byte);
+    }
+    if (Serial.available() > 0) {
+      rx_byte = Serial.read();
+      SerialUSB.write(rx_byte);
+    }
+  }
+}
+
 void update_buttons() {
+  static uint32_t last_led_update = 0;
+  static int is_on = 0;
+  const uint32_t update_freq = 2000;
+
   int xbee_rst_button_state = digitalRead(Button1);
   int xbee_multi4_button_state = digitalRead(Button2);
 
@@ -59,22 +100,14 @@ void update_buttons() {
     digitalWrite(DS3, HIGH);
     digitalWrite(XBEE_MULT4, HIGH);
   }
-}
 
-uint32_t last_uptime_update = 0;
-void update_uptime() {
-  const uint32_t update_freq = 1000;
-  // if (millis() < last_uptime_update + update_freq) {
-  //   // only update every update_freq miliseconds
-  //   return;
-  // }
+  if (sm.xbeeReset) {
+    xbeeReset();
+  }
 
-  SerialUSB.println();
-  SerialUSB.print("Uptime> ");
-  SerialUSB.print(millis());
-  SerialUSB.println();
-
-  last_uptime_update = millis();
+  if (sm.xbeePassthroughEnable || digitalRead(Button2) == LOW) {
+    xbeePassthroughLoop();
+  }
 }
 
 #endif /* M2SMART_H_ */

@@ -2,8 +2,6 @@
 #include "settings.h"
 #include "sys_io.h"
 
-void CommController::setup() {}
-
 void CommController::sendFrameToUSB(CAN_FRAME &frame, int whichBus) {
   uint8_t chksum;
   uint32_t now = micros();
@@ -31,21 +29,21 @@ void CommController::sendFrameToUSB(CAN_FRAME &frame, int whichBus) {
     chksum = 0;
     frameOutputBuffer[frameOutputBufferLength++] = chksum;
   } else {
-    Serial.print(micros());
-    Serial.print(" - ");
-    Serial.print(frame.id, HEX);
+    _out.print(micros());
+    _out.print(" - ");
+    _out.print(frame.id, HEX);
     if (frame.extended)
-      Serial.print(" X ");
+      _out.print(" X ");
     else
-      Serial.print(" S ");
-    Serial.print(whichBus);
-    Serial.print(" ");
-    Serial.print(frame.length);
+      _out.print(" S ");
+    _out.print(whichBus);
+    _out.print(" ");
+    _out.print(frame.length);
     for (int c = 0; c < frame.length; c++) {
-      Serial.print(" ");
-      Serial.print(frame.data.bytes[c], HEX);
+      _out.print(" ");
+      _out.print(frame.data.bytes[c], HEX);
     }
-    Serial.println();
+    _out.println();
   }
 }
 
@@ -63,36 +61,33 @@ uint8_t CommController::checksumCalc(uint8_t *buffer, int length)
 void CommController::checkBuffer() {
   if (micros() - lastFlushMicros > SER_BUFF_FLUSH_INTERVAL) {
     if (frameOutputBufferLength > 0) {
-      _serial.write(frameOutputBuffer, frameOutputBufferLength);
+      _out.write(frameOutputBuffer, frameOutputBufferLength);
       frameOutputBufferLength = 0;
       lastFlushMicros = micros();
     }
   }
 }
 
-void CommController::getCommandLoop(int in_byte) {
-  STATE newState = IDLE;
+void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
   uint32_t now = micros();
+  uint8_t temp8;
+  uint16_t temp16;
 
-  switch (in_byte) {
-  case PROTO_BUILD_CAN_FRAME: {
-    newState = BUILD_CAN_FRAME;
+  if (in_byte == PROTO_BUILD_CAN_FRAME) {
     responseBuff[0] = 0xF1;
-    break;
-  }
-  case PROTO_TIME_SYNC: {
-    newState = TIME_SYNC;
+    currentState = BUILD_CAN_FRAME;
+
+  } else if (in_byte == PROTO_TIME_SYNC) { 
     responseBuff[0] = 0xF1;
     responseBuff[1] = 1; // time sync
     responseBuff[2] = (uint8_t)(now & 0xFF);
     responseBuff[3] = (uint8_t)(now >> 8);
     responseBuff[4] = (uint8_t)(now >> 16);
     responseBuff[5] = (uint8_t)(now >> 24);
-    _serial.write(responseBuff, 6);
-    break;
-  }
-  case PROTO_DIG_INPUTS: {
-    uint8_t temp8;
+    _out.write(responseBuff, 6);
+    currentState = IDLE;
+
+  } else if (in_byte == PROTO_DIG_INPUTS) { 
     // immediately return the data for digital inputs
     temp8 = getDigital(0) + (getDigital(1) << 1) + (getDigital(2) << 2) +
             (getDigital(3) << 3) + (getDigital(4) << 4) + (getDigital(5) << 5);
@@ -101,13 +96,10 @@ void CommController::getCommandLoop(int in_byte) {
     responseBuff[2] = temp8;
     temp8 = checksumCalc(responseBuff, 2);
     responseBuff[3] = temp8;
-    _serial.write(responseBuff, 4);
-    newState = IDLE;
-    break;
-  }
-  case PROTO_ANA_INPUTS: {
-    uint8_t temp8;
-    uint16_t temp16;
+    _out.write(responseBuff, 4);
+    currentState = IDLE;
+
+  } else if (in_byte == PROTO_ANA_INPUTS) { 
     // immediately return data on analog inputs
     temp16 = getAnalog(0); // Analogue input 1
     responseBuff[0] = 0xF1;
@@ -134,21 +126,18 @@ void CommController::getCommandLoop(int in_byte) {
     responseBuff[15] = uint8_t(temp16 >> 8);
     temp8 = checksumCalc(responseBuff, 9);
     responseBuff[16] = temp8;
-    _serial.write(responseBuff, 17);
-    newState = IDLE;
-    break;
-  }
-  case PROTO_SET_DIG_OUT: {
-    newState = SET_DIG_OUTPUTS;
+    _out.write(responseBuff, 17);
+    currentState = IDLE;    
+
+  } else if (in_byte == PROTO_SET_DIG_OUT) { 
     responseBuff[0] = 0xF1;
-    break;
-  }
-  case PROTO_SETUP_CANBUS: {
-    newState = SETUP_CANBUS;
+    currentState = SET_DIG_OUTPUTS;
+
+  } else if (in_byte == PROTO_SETUP_CANBUS) { 
     responseBuff[0] = 0xF1;
-    break;
-  }
-  case PROTO_GET_CANBUS_PARAMS: {
+    currentState = SETUP_CANBUS;
+
+  } else if (in_byte == PROTO_GET_CANBUS_PARAMS) { 
     // immediately return data on canbus params
     responseBuff[0] = 0xF1;
     responseBuff[1] = 6;
@@ -166,11 +155,10 @@ void CommController::getCommandLoop(int in_byte) {
     responseBuff[9] = sm.settings.CAN1Speed >> 8;
     responseBuff[10] = sm.settings.CAN1Speed >> 16;
     responseBuff[11] = sm.settings.CAN1Speed >> 24;
-    _serial.write(responseBuff, 12);
-    newState = IDLE;
-    break;
-  }
-  case PROTO_GET_DEV_INFO: {
+    _out.write(responseBuff, 12);
+    currentState = IDLE;
+
+  } else if (in_byte == PROTO_GET_DEV_INFO) { 
     // immediately return device information
     responseBuff[0] = 0xF1;
     responseBuff[1] = 7;
@@ -179,46 +167,39 @@ void CommController::getCommandLoop(int in_byte) {
     responseBuff[4] = EEPROM_VER;
     responseBuff[5] = (unsigned char)sm.settings.fileOutputType;
     responseBuff[6] = (unsigned char)sm.settings.autoStartLogging;
-    responseBuff[7] =
-        0; // was single wire mode. Should be rethought for this board.
-    _serial.write(responseBuff, 8);
-    newState = IDLE;
-    break;
-  }
-  case PROTO_SET_SW_MODE: {
+    responseBuff[7] = 0; // was single wire mode. Should be rethought for this board.
+    _out.write(responseBuff, 8);
+    currentState = IDLE;
+
+  } else if (in_byte == PROTO_SET_SW_MODE) { 
     responseBuff[0] = 0xF1;
-    newState = SET_SINGLEWIRE_MODE;
-    break;
-  }
-  case PROTO_KEEPALIVE: {
+    currentState = SET_SINGLEWIRE_MODE;
+
+  } else if (in_byte == PROTO_KEEPALIVE) { 
     responseBuff[0] = 0xF1;
     responseBuff[1] = 0x09;
     responseBuff[2] = 0xDE;
     responseBuff[3] = 0xAD;
-    _serial.write(responseBuff, 4);
-    newState = IDLE;
-    break;
-  }
-  case PROTO_SET_SYSTYPE: {
+    _out.write(responseBuff, 4);
+    currentState = IDLE;
+
+  } else if (in_byte == PROTO_SET_SYSTYPE) { 
     responseBuff[0] = 0xF1;
-    newState = SET_SYSTYPE;
-    break;
-  }
-  case PROTO_ECHO_CAN_FRAME: {
-    newState = ECHO_CAN_FRAME;
+    currentState = SET_SYSTYPE;
+
+  } else if (in_byte == PROTO_ECHO_CAN_FRAME) { 
     responseBuff[0] = 0xF1;
-    break;
-  }
-  case PROTO_GET_NUMBUSES: {
+    currentState = ECHO_CAN_FRAME;
+
+  } else if (in_byte == PROTO_GET_NUMBUSES) { 
     responseBuff[0] = 0xF1;
     responseBuff[1] = 12;
     responseBuff[2] = 3; // number of buses actually supported by this hardware
                          // (TODO: will be 5 eventually)
-    _serial.write(responseBuff, 3);
-    newState = IDLE;
-    break;
-  }
-  case PROTO_GET_EXT_BUSES: {
+    _out.write(responseBuff, 3);
+    currentState = IDLE;
+
+  } else if (in_byte == PROTO_GET_EXT_BUSES) { 
     responseBuff[0] = 0xF1;
     responseBuff[1] = 13;
     responseBuff[2] = sm.settings.SWCAN_Enabled +
@@ -237,18 +218,16 @@ void CommController::getCommandLoop(int in_byte) {
     responseBuff[14] = sm.settings.LIN2Speed >> 8;
     responseBuff[15] = sm.settings.LIN2Speed >> 16;
     responseBuff[16] = sm.settings.LIN2Speed >> 24;
-    _serial.write(responseBuff, 17);
-    newState = IDLE;
-    break;
-  }
-  case PROTO_SET_EXT_BUSES: {
-    newState = SETUP_EXT_BUSES;
-    responseBuff[0] = 0xF1;
-    break;
-  }
-  }
+    _out.write(responseBuff, 17);
+    currentState = IDLE;
 
-  currentState = newState;
+  } else if (in_byte == PROTO_SET_EXT_BUSES) { 
+    responseBuff[0] = 0xF1;
+    currentState = SETUP_EXT_BUSES;
+
+  } else {
+    currentState = IDLE;
+  }
 }
 
 void CommController::echoCanFrame(int in_byte) {
@@ -604,96 +583,32 @@ void CommController::setupExtBuses(int in_byte) {
   step++;
 }
 
-void CommController::loop() {
-  int in_byte;
+void CommController::read(Print &out, int in_byte) {
   static uint32_t build_int;
-  uint32_t now = micros();
 
-  checkBuffer();
+  _out = out; // switch to whatever output we are using currently
 
-  int serialCnt = 0;
-  while ((_serial.available() > 0) && serialCnt < 128) {
-    serialCnt++;
-    in_byte = _serial.read();
-    switch (currentState) {
-    case IDLE: {
-      if (in_byte == 0xF1) {
-        currentState = GET_COMMAND;
-      } else if (in_byte == 0xE7) {
-        sm.settings.useBinarySerialComm = true;
-        sm.writeSettings();
-        _driver.setPromiscuousMode(); // going into binary comm will set
-                                      // promisc. mode too.
-      } else {
-        // console.rcvCharacter((uint8_t)in_byte);
-      }
-      break;
+  if (currentState == IDLE) {
+    if (in_byte == 0xF1) {
+      currentState = GET_COMMAND;
+    } else if (in_byte == 0xE7) {
+      sm.settings.useBinarySerialComm = true;
+      sm.writeSettings();
+
+    } else {
+      _console.rcvCharacter(_out, (uint8_t)in_byte);
     }
-    case GET_COMMAND: {
-      getCommandLoop(in_byte);
-      break;
-    }
-    case BUILD_CAN_FRAME: {
-      buildCanFrame(in_byte);
-      break;
-    }
-    case TIME_SYNC: {
-      currentState = IDLE;
-      break;
-    }
-    case GET_DIG_INPUTS: {
-      // nothing to do
-      currentState = IDLE;
-      break;
-    }
-    case GET_ANALOG_INPUTS: {
-      // nothing to do
-      currentState = IDLE;
-      break;
-    }
-    case SET_DIG_OUTPUTS: { // todo: validate the XOR byte
-      uint8_t temp8;
-      responseBuff[1] = in_byte;
-      // temp8 = checksumCalc(responseBuff, 2);
-      for (int c = 0; c < 8; c++) {
-        // if (in_byte & (1 << c)) setOutput(c, true);
-        // else setOutput(c, false);
-      }
-      currentState = IDLE;
-      break;
-    }
-    case SETUP_CANBUS: {
-      setupCanBus(in_byte);
-      break;
-    }
-    case GET_CANBUS_PARAMS: {
-      // nothing to do
-      currentState = IDLE;
-      break;
-    }
-    case GET_DEVICE_INFO: {
-      // nothing to do
-      currentState = IDLE;
-      break;
-    }
-    case SET_SINGLEWIRE_MODE: {
-      // nothing to do
-      currentState = IDLE;
-      break;
-    }
-    case SET_SYSTYPE: {
-      // nothing to do
-      currentState = IDLE;
-      break;
-    }
-    case ECHO_CAN_FRAME: {
-      echoCanFrame(in_byte);
-      break;
-    }
-    case SETUP_EXT_BUSES: {
-      setupExtBuses(in_byte);
-      break;
-    }
-    }
+  } else if (currentState == GET_COMMAND) { 
+    getCommandLoop(currentState, in_byte);
+  } else if (currentState == BUILD_CAN_FRAME) {
+    buildCanFrame(in_byte);
+  } else if (currentState == SETUP_CANBUS) {
+    setupCanBus(in_byte);
+  } else if (currentState == ECHO_CAN_FRAME) {
+    echoCanFrame(in_byte);
+  } else if (currentState == SETUP_EXT_BUSES) {
+    setupExtBuses(in_byte);
+  } else {
+    currentState = IDLE;
   }
 }
