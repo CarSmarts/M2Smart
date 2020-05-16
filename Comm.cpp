@@ -586,7 +586,7 @@ void CommController::setupExtBuses(int in_byte) {
 void CommController::read(Print &out, int in_byte) {
   static uint32_t build_int;
 
-  _out = out; // switch to whatever output we are using currently
+  // _out = out; // switch to whatever output we are using currently
 
   if (currentState == IDLE) {
     if (in_byte == 0xF1) {

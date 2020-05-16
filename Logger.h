@@ -37,11 +37,12 @@ public:
   static void info(const char *, ...);
   static void warn(const char *, ...);
   static void error(const char *, ...);
-  static void console(Print &out, const char *, ...);
+  static void console(const char *, ...);
   static void file(const char *, ...);
   static void fileRaw(uint8_t *, int);
   static void setLoglevel(LogLevel);
   static void setLogOut(Print &out);
+  static Print & getLogOut();
   static LogLevel getLogLevel();
   static uint32_t getLastLogTime();
   static boolean isDebug();
@@ -60,7 +61,7 @@ private:
   static uint32_t lastWriteTime;
 
   static void log(LogLevel, const char *format, va_list);
-  static void logMessage(Print &out, const char *format, va_list args);
+  static void logMessage(const char *format, va_list args);
   static void buffPutChar(char c);
   static void buffPutString(const char *c);
   static boolean setupFile();

@@ -108,10 +108,10 @@ void Logger::error(const char *message, ...) {
  * Output a comnsole message with a variable amount of parameters
  * printf() style, see Logger::logMessage()
  */
-void Logger::console(Print &out, const char *message, ...) {
+void Logger::console(const char *message, ...) {
   va_list args;
   va_start(args, message);
-  Logger::logMessage(out, message, args);
+  Logger::logMessage(message, args);
   va_end(args);
 }
 
@@ -306,6 +306,11 @@ void Logger::setLoglevel(LogLevel level) { logLevel = level; }
 void Logger::setLogOut(Print &out) { logOut = out; }
 
 /*
+ * Set the output location for log messages. (default = SerialUSB)
+ */
+Print & Logger::getLogOut() { return logOut; }
+
+/*
  * Retrieve the current log level.
  */
 Logger::LogLevel Logger::getLogLevel() { return logLevel; }
@@ -370,7 +375,7 @@ void Logger::log(LogLevel level, const char *format, va_list args) {
 
   logOut.print(": ");
 
-  logMessage(logOut, format, args);
+  logMessage(format, args);
 }
 
 /*
@@ -391,7 +396,7 @@ void Logger::log(LogLevel level, const char *format, va_list args) {
  * %t - prints the next parameter as boolean ('T' or 'F')
  * %T - prints the next parameter as boolean ('true' or 'false')
  */
-void Logger::logMessage(Print &out, const char *format, va_list args) {
+void Logger::logMessage(const char *format, va_list args) {
   for (; *format != 0; ++format) {
     if (*format == '%') {
       ++format;
@@ -401,63 +406,63 @@ void Logger::logMessage(Print &out, const char *format, va_list args) {
       }
 
       if (*format == '%') {
-        out.print(*format);
+        logOut.print(*format);
         continue;
       }
 
       if (*format == 's') {
         register char *s = (char *)va_arg(args, int);
-        out.print(s);
+        logOut.print(s);
         continue;
       }
 
       if (*format == 'd' || *format == 'i') {
-        out.print(va_arg(args, int), DEC);
+        logOut.print(va_arg(args, int), DEC);
         continue;
       }
 
       if (*format == 'f') {
-        out.print(va_arg(args, double), 2);
+        logOut.print(va_arg(args, double), 2);
         continue;
       }
 
       if (*format == 'x') {
-        out.print(va_arg(args, int), HEX);
+        logOut.print(va_arg(args, int), HEX);
         continue;
       }
 
       if (*format == 'X') {
-        out.print("0x");
-        out.print(va_arg(args, int), HEX);
+        logOut.print("0x");
+        logOut.print(va_arg(args, int), HEX);
         continue;
       }
 
       if (*format == 'b') {
-        out.print(va_arg(args, int), BIN);
+        logOut.print(va_arg(args, int), BIN);
         continue;
       }
 
       if (*format == 'B') {
-        out.print("0b");
-        out.print(va_arg(args, int), BIN);
+        logOut.print("0b");
+        logOut.print(va_arg(args, int), BIN);
         continue;
       }
 
       if (*format == 'l') {
-        out.print(va_arg(args, long), DEC);
+        logOut.print(va_arg(args, long), DEC);
         continue;
       }
 
       if (*format == 'c') {
-        out.print(va_arg(args, int));
+        logOut.print(va_arg(args, int));
         continue;
       }
 
       if (*format == 't') {
         if (va_arg(args, int) == 1) {
-          out.print("T");
+          logOut.print("T");
         } else {
-          out.print("F");
+          logOut.print("F");
         }
 
         continue;
@@ -465,19 +470,19 @@ void Logger::logMessage(Print &out, const char *format, va_list args) {
 
       if (*format == 'T') {
         if (va_arg(args, int) == 1) {
-          out.print("TRUE");
+          logOut.print("TRUE");
         } else {
-          out.print("FALSE");
+          logOut.print("FALSE");
         }
 
         continue;
       }
     }
 
-    out.print(*format);
+    logOut.print(*format);
   }
 
-  out.println();
+  logOut.println();
 }
 
 void Logger::initSDLogging() {

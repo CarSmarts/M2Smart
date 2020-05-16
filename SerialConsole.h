@@ -46,11 +46,11 @@ private:
     char tokens[14][10];
     int ptrBuffer;
 
-    void handleConsoleCmd(Print &out);
-    void handleShortCmd(Print &out);
-    void handleConfigCmd(Print &out);
-    bool handleFilterSet(Print &out, uint8_t bus, uint8_t filter, char *values);
-    bool handleCANSend(Print &out, DriverBase::BUS whichBus, char *inputString);
+    void handleConsoleCmd();
+    void handleShortCmd();
+    void handleConfigCmd();
+    bool handleFilterSet(uint8_t bus, uint8_t filter, char *values);
+    bool handleCANSend(DriverBase::BUS whichBus, char *inputString);
     unsigned int parseHexCharacter(char chr);
 };
 
