@@ -44,7 +44,7 @@ SerialConsole::SerialConsole(DriverBase &driver) : _driver(driver)
 void SerialConsole::printMenu(Print &out)
 {
     char buff[80];
-    Logger::setLogOut(out);
+    // Logger::setLogOut(out);
 
     //Show build # here as well in case people are using the native port and don't get to see the start up messages
     out.print("Build number: ");
@@ -131,7 +131,7 @@ void SerialConsole::printMenu(Print &out)
 void SerialConsole::rcvCharacter(Print &out, uint8_t chr)
 {
     if (chr == 10 || chr == 13) { //command done. Parse it.
-        Logger::setLogOut(out);
+        // Logger::setLogOut(out);
         handleConsoleCmd();
         ptrBuffer = 0; //reset line counter once the line has been processed
     } else {
@@ -161,7 +161,7 @@ void SerialConsole::handleShortCmd()
     case 'h':
     case '?':
     case 'H':
-        printMenu(Logger::getLogOut());
+        printMenu(SerialUSB);
         break;
     case 'R': //reset to factory defaults.
         sm.settings.version = 0xFF;
