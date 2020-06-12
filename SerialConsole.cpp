@@ -44,27 +44,27 @@ SerialConsole::SerialConsole(DriverBase *driver) : _driver(driver)
 void SerialConsole::printMenu()
 {
     char buff[80];
-    Print &out = Logger::getLogOut();
+    Print *out = Logger::getLogOut();
 
     //Show build # here as well in case people are using the native port and don't get to see the start up messages
-    out.print("Build number: ");
-    out.println(CFG_BUILD_NUM);
-    out.println("System Menu:");
-    out.println();
-    out.println("Enable line endings of some sort (LF, CR, CRLF)");
-    out.println();
-    out.println("Short Commands:");
-    out.println("h = help (displays this message)");
-    out.println("R = reset to factory defaults");
-    out.println("s = Start logging to file");
-    out.println("S = Stop logging to file");
-    out.println();
-    out.println("Config Commands (enter command=newvalue). Current values shown in parenthesis:");
-    out.println();
+    out->print("Build number: ");
+    out->println(CFG_BUILD_NUM);
+    out->println("System Menu:");
+    out->println();
+    out->println("Enable line endings of some sort (LF, CR, CRLF)");
+    out->println();
+    out->println("Short Commands:");
+    out->println("h = help (displays this message)");
+    out->println("R = reset to factory defaults");
+    out->println("s = Start logging to file");
+    out->println("S = Stop logging to file");
+    out->println();
+    out->println("Config Commands (enter command=newvalue). Current values shown in parenthesis:");
+    out->println();
 
     Logger::console("LOGLEVEL=%i - set log level (0=debug, 1=info, 2=warn, 3=error, 4=off)", sm.settings.logLevel);
     // Logger::console("SYSTYPE=%i - set board type (0=Macchina M2)", sm.settings.sysType);
-    out.println();
+    out->println();
 
     Logger::console("CAN0EN=%i - Enable/Disable CAN0 (0 = Disable, 1 = Enable)", sm.settings.CAN0_Enabled);
     Logger::console("CAN0SPEED=%i - Set speed of CAN0 in baud (125000, 250000, etc)", sm.settings.CAN0Speed);
@@ -74,7 +74,7 @@ void SerialConsole::printMenu()
         Logger::console(buff, sm.settings.CAN0Filters[i].id, sm.settings.CAN0Filters[i].mask,
                         sm.settings.CAN0Filters[i].extended, sm.settings.CAN0Filters[i].enabled);
     }*/
-    out.println();
+    out->println();
 
     Logger::console("CAN1EN=%i - Enable/Disable CAN1 (0 = Disable, 1 = Enable)", sm.settings.CAN1_Enabled);
     Logger::console("CAN1SPEED=%i - Set speed of CAN1 in baud (125000, 250000, etc)", sm.settings.CAN1Speed);
@@ -86,29 +86,29 @@ void SerialConsole::printMenu()
                         sm.settings.CAN1Filters[i].extended, sm.settings.CAN1Filters[i].enabled);
     }*/
     
-    out.println();
+    out->println();
 
     Logger::console("SWCANEN=%i - Enable/Disable Single Wire CAN (0 = Disable, 1 = Enable)", sm.settings.SWCAN_Enabled);
     Logger::console("SWCANSPEED=%i - Set speed of Single Wire CAN in baud (33000, 93000, etc)", sm.settings.SWCANSpeed);
     Logger::console("SWCANLISTENONLY=%i - Enable/Disable Listen Only Mode (0 = Dis, 1 = En)", sm.settings.SWCANListenOnly);
-    out.println();
+    out->println();
     
     Logger::console("CAN0SEND=ID,LEN,<BYTES SEPARATED BY COMMAS> - Ex: CAN0SEND=0x200,4,1,2,3,4");
     Logger::console("CAN1SEND=ID,LEN,<BYTES SEPARATED BY COMMAS> - Ex: CAN1SEND=0x200,8,00,00,00,10,0xAA,0xBB,0xA0,00");
     Logger::console("SWSEND=ID,LEN,<BYTES SEPARATED BY COMMAS> - Ex: SWSEND=0x100,4,10,20,30,40");
     Logger::console("MARK=<Description of what you are doing> - Set a mark in the log file about what you are about to do.");
-    out.println();
+    out->println();
 
     Logger::console("BINSERIAL=%i - Enable/Disable Binary Sending of CANBus Frames to Serial (0=Dis, 1=En)", sm.settings.useBinarySerialComm);
     Logger::console("FILETYPE=%i - Set type of file output (0=None, 1 = Binary, 2 = GVRET, 3 = CRTD)", sm.settings.fileOutputType);
-    out.println();
+    out->println();
 
     Logger::console("FILEBASE=%s - Set filename base for saving", (char *)sm.settings.fileNameBase);
     Logger::console("FILEEXT=%s - Set filename ext for saving", (char *)sm.settings.fileNameExt);
     Logger::console("FILENUM=%i - Set incrementing number for filename", sm.settings.fileNum);
     Logger::console("FILEAPPEND=%i - Append to file (no numbers) or use incrementing numbers after basename (0=Incrementing Numbers, 1=Append)", sm.settings.appendFile);
     Logger::console("FILEAUTO=%i - Automatically start logging at startup (0=No, 1 = Yes)", sm.settings.autoStartLogging);
-    out.println();
+    out->println();
 
     // Logger::console("DIGTOGEN=%i - Enable digital toggling system (0 = Dis, 1 = En)", digToggleSettings.enabled);
     // Logger::console("DIGTOGMODE=%i - Set digital toggle mode (0 = Read pin, send CAN, 1 = Receive CAN, set pin)", digToggleSettings.mode & 1);
@@ -128,10 +128,10 @@ void SerialConsole::printMenu()
  Now the system can handle up to 80 input characters. Commands are submitted
  by sending line ending (LF, CR, or both)
  */
-void SerialConsole::rcvCharacter(Print &out, uint8_t chr)
+void SerialConsole::rcvCharacter(Print *out, uint8_t chr)
 {
     if (chr == 10 || chr == 13) { //command done. Parse it.
-        // Logger::setLogOut(out);
+        Logger::setLogOut(out);
         handleConsoleCmd();
         ptrBuffer = 0; //reset line counter once the line has been processed
     } else {

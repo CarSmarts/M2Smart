@@ -36,7 +36,7 @@ class SerialConsole {
 public:
     SerialConsole(DriverBase *driver);
     void printMenu();
-    void rcvCharacter(Print &out, uint8_t chr);
+    void rcvCharacter(Print *out, uint8_t chr);
 
 protected:
     DriverBase *_driver;

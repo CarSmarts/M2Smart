@@ -29,21 +29,21 @@ void CommController::sendFrameToUSB(CAN_FRAME &frame, int whichBus) {
     chksum = 0;
     frameOutputBuffer[frameOutputBufferLength++] = chksum;
   } else {
-    _out.print(micros());
-    _out.print(" - ");
-    _out.print(frame.id, HEX);
+    _out->print(micros());
+    _out->print(" - ");
+    _out->print(frame.id, HEX);
     if (frame.extended)
-      _out.print(" X ");
+      _out->print(" X ");
     else
-      _out.print(" S ");
-    _out.print(whichBus);
-    _out.print(" ");
-    _out.print(frame.length);
+      _out->print(" S ");
+    _out->print(whichBus);
+    _out->print(" ");
+    _out->print(frame.length);
     for (int c = 0; c < frame.length; c++) {
-      _out.print(" ");
-      _out.print(frame.data.bytes[c], HEX);
+      _out->print(" ");
+      _out->print(frame.data.bytes[c], HEX);
     }
-    _out.println();
+    _out->println();
   }
 }
 
@@ -61,7 +61,7 @@ uint8_t CommController::checksumCalc(uint8_t *buffer, int length)
 void CommController::checkBuffer() {
   if (micros() - lastFlushMicros > SER_BUFF_FLUSH_INTERVAL) {
     if (frameOutputBufferLength > 0) {
-      _out.write(frameOutputBuffer, frameOutputBufferLength);
+      _out->write(frameOutputBuffer, frameOutputBufferLength);
       frameOutputBufferLength = 0;
       lastFlushMicros = micros();
     }
@@ -84,7 +84,7 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
     responseBuff[3] = (uint8_t)(now >> 8);
     responseBuff[4] = (uint8_t)(now >> 16);
     responseBuff[5] = (uint8_t)(now >> 24);
-    _out.write(responseBuff, 6);
+    _out->write(responseBuff, 6);
     currentState = IDLE;
 
   } else if (in_byte == PROTO_DIG_INPUTS) { 
@@ -96,7 +96,7 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
     responseBuff[2] = temp8;
     temp8 = checksumCalc(responseBuff, 2);
     responseBuff[3] = temp8;
-    _out.write(responseBuff, 4);
+    _out->write(responseBuff, 4);
     currentState = IDLE;
 
   } else if (in_byte == PROTO_ANA_INPUTS) { 
@@ -126,7 +126,7 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
     responseBuff[15] = uint8_t(temp16 >> 8);
     temp8 = checksumCalc(responseBuff, 9);
     responseBuff[16] = temp8;
-    _out.write(responseBuff, 17);
+    _out->write(responseBuff, 17);
     currentState = IDLE;    
 
   } else if (in_byte == PROTO_SET_DIG_OUT) { 
@@ -155,7 +155,7 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
     responseBuff[9] = sm.settings.CAN1Speed >> 8;
     responseBuff[10] = sm.settings.CAN1Speed >> 16;
     responseBuff[11] = sm.settings.CAN1Speed >> 24;
-    _out.write(responseBuff, 12);
+    _out->write(responseBuff, 12);
     currentState = IDLE;
 
   } else if (in_byte == PROTO_GET_DEV_INFO) { 
@@ -168,7 +168,7 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
     responseBuff[5] = (unsigned char)sm.settings.fileOutputType;
     responseBuff[6] = (unsigned char)sm.settings.autoStartLogging;
     responseBuff[7] = 0; // was single wire mode. Should be rethought for this board.
-    _out.write(responseBuff, 8);
+    _out->write(responseBuff, 8);
     currentState = IDLE;
 
   } else if (in_byte == PROTO_SET_SW_MODE) { 
@@ -180,7 +180,7 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
     responseBuff[1] = 0x09;
     responseBuff[2] = 0xDE;
     responseBuff[3] = 0xAD;
-    _out.write(responseBuff, 4);
+    _out->write(responseBuff, 4);
     currentState = IDLE;
 
   } else if (in_byte == PROTO_SET_SYSTYPE) { 
@@ -196,7 +196,7 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
     responseBuff[1] = 12;
     responseBuff[2] = 3; // number of buses actually supported by this hardware
                          // (TODO: will be 5 eventually)
-    _out.write(responseBuff, 3);
+    _out->write(responseBuff, 3);
     currentState = IDLE;
 
   } else if (in_byte == PROTO_GET_EXT_BUSES) { 
@@ -218,7 +218,7 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
     responseBuff[14] = sm.settings.LIN2Speed >> 8;
     responseBuff[15] = sm.settings.LIN2Speed >> 16;
     responseBuff[16] = sm.settings.LIN2Speed >> 24;
-    _out.write(responseBuff, 17);
+    _out->write(responseBuff, 17);
     currentState = IDLE;
 
   } else if (in_byte == PROTO_SET_EXT_BUSES) { 
@@ -231,13 +231,10 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
 }
 
 void CommController::echoCanFrame(int in_byte) {
-  Logger::console("Processing echo byte %X", in_byte);
   static CAN_FRAME build_out_frame;
   static int out_bus;
   static int step = 0;
   int temp8;
-
-  Logger::console("Step: %i", step);
 
   responseBuff[1 + step] = in_byte;
   switch (step) {
@@ -587,10 +584,10 @@ void CommController::setupExtBuses(int in_byte) {
   step++;
 }
 
-void CommController::read(Print &out, int in_byte) {
+void CommController::read(Print *out, int in_byte) {
   static uint32_t build_int;
 
-  // _out = out; // switch to whatever output we are using currently
+  _out = out; // switch to whatever output we are using currently
 
   if (currentState == IDLE) {
     if (in_byte == 0xF1) {

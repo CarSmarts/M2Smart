@@ -33,7 +33,7 @@
 
 boolean Logger::SDCardInserted = false;
 boolean Logger::logToggle = false;
-Print & Logger::logOut = Serial;
+Print * Logger::logOut = &Serial;
 
 Logger::LogLevel Logger::logLevel = Logger::Info;
 uint32_t Logger::lastLogTime = 0;
@@ -303,12 +303,12 @@ void Logger::setLoglevel(LogLevel level) { logLevel = level; }
 /*
  * Set the output location for log messages. (default = SerialUSB)
  */
-void Logger::setLogOut(Print &out) { logOut = out; }
+void Logger::setLogOut(Print *out) { logOut = out; }
 
 /*
  * Set the output location for log messages. (default = SerialUSB)
  */
-Print & Logger::getLogOut() { return logOut; }
+Print * Logger::getLogOut() { return logOut; }
 
 /*
  * Retrieve the current log level.
@@ -352,28 +352,28 @@ boolean Logger::isDebug() { return logLevel == Debug; }
  */
 void Logger::log(LogLevel level, const char *format, va_list args) {
   lastLogTime = millis();
-  logOut.print(lastLogTime);
-  logOut.print(" - ");
+  logOut->print(lastLogTime);
+  logOut->print(" - ");
 
   switch (level) {
   case Debug:
-    logOut.print("DEBUG");
+    logOut->print("DEBUG");
     break;
 
   case Info:
-    logOut.print("INFO");
+    logOut->print("INFO");
     break;
 
   case Warn:
-    logOut.print("WARNING");
+    logOut->print("WARNING");
     break;
 
   case Error:
-    logOut.print("ERROR");
+    logOut->print("ERROR");
     break;
   }
 
-  logOut.print(": ");
+  logOut->print(": ");
 
   logMessage(format, args);
 }
@@ -406,63 +406,63 @@ void Logger::logMessage(const char *format, va_list args) {
       }
 
       if (*format == '%') {
-        logOut.print(*format);
+        logOut->print(*format);
         continue;
       }
 
       if (*format == 's') {
         register char *s = (char *)va_arg(args, int);
-        logOut.print(s);
+        logOut->print(s);
         continue;
       }
 
       if (*format == 'd' || *format == 'i') {
-        logOut.print(va_arg(args, int), DEC);
+        logOut->print(va_arg(args, int), DEC);
         continue;
       }
 
       if (*format == 'f') {
-        logOut.print(va_arg(args, double), 2);
+        logOut->print(va_arg(args, double), 2);
         continue;
       }
 
       if (*format == 'x') {
-        logOut.print(va_arg(args, int), HEX);
+        logOut->print(va_arg(args, int), HEX);
         continue;
       }
 
       if (*format == 'X') {
-        logOut.print("0x");
-        logOut.print(va_arg(args, int), HEX);
+        logOut->print("0x");
+        logOut->print(va_arg(args, int), HEX);
         continue;
       }
 
       if (*format == 'b') {
-        logOut.print(va_arg(args, int), BIN);
+        logOut->print(va_arg(args, int), BIN);
         continue;
       }
 
       if (*format == 'B') {
-        logOut.print("0b");
-        logOut.print(va_arg(args, int), BIN);
+        logOut->print("0b");
+        logOut->print(va_arg(args, int), BIN);
         continue;
       }
 
       if (*format == 'l') {
-        logOut.print(va_arg(args, long), DEC);
+        logOut->print(va_arg(args, long), DEC);
         continue;
       }
 
       if (*format == 'c') {
-        logOut.print(va_arg(args, int));
+        logOut->print(va_arg(args, int));
         continue;
       }
 
       if (*format == 't') {
         if (va_arg(args, int) == 1) {
-          logOut.print("T");
+          logOut->print("T");
         } else {
-          logOut.print("F");
+          logOut->print("F");
         }
 
         continue;
@@ -470,19 +470,19 @@ void Logger::logMessage(const char *format, va_list args) {
 
       if (*format == 'T') {
         if (va_arg(args, int) == 1) {
-          logOut.print("TRUE");
+          logOut->print("TRUE");
         } else {
-          logOut.print("FALSE");
+          logOut->print("FALSE");
         }
 
         continue;
       }
     }
 
-    logOut.print(*format);
+    logOut->print(*format);
   }
 
-  logOut.println();
+  logOut->println();
 }
 
 void Logger::initSDLogging() {

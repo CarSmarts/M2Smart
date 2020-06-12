@@ -41,8 +41,8 @@ public:
   static void file(const char *, ...);
   static void fileRaw(uint8_t *, int);
   static void setLoglevel(LogLevel);
-  static void setLogOut(Print &out);
-  static Print & getLogOut();
+  static void setLogOut(Print *out);
+  static Print * getLogOut();
   static LogLevel getLogLevel();
   static uint32_t getLastLogTime();
   static boolean isDebug();
@@ -52,7 +52,7 @@ private:
   // flag to guard writing to file when SD Card is not inserted
   static boolean SDCardInserted;
   static boolean logToggle;
-  static Print &logOut;
+  static Print *logOut;
 
   static LogLevel logLevel;
   static uint32_t lastLogTime;

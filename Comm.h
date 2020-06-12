@@ -43,7 +43,7 @@ private:
     PROTO_SET_EXT_BUSES = 14
   };
 
-  Print &_out;
+  Print *_out;
   DriverBase *_driver;
   SerialConsole _console;
 
@@ -65,10 +65,10 @@ private:
   uint32_t lastFlushMicros = 0;
 
 public:
-  CommController(Print &out, DriverBase *driver) : _out(out), _driver(driver), _console(driver) { };
+  CommController(DriverBase *driver) : _out(&Serial), _driver(driver), _console(driver) { };
 
   /// call whenever there is a new input to process
-  void read(Print &out, int in_byte);
+  void read(Print *out, int in_byte);
 
   /// check to see if buffer is ready to be sent
   /// needs to be called peroidically

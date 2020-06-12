@@ -89,17 +89,17 @@ Detail of each command:
     Byte 2 - 0xDE
     Byte 3 - 0xAD - So, if it isn't dead it responds with DEAD.
 
-10 - Set system type
+0A - Set system type
     Byte 0 - System type (right now only 0 for M2 project but GVRET takes 0-2)
     Reply: None
 
-0A - Echo CAN frame
+0B - Echo CAN frame
     byte 0-3 - Frame ID LSB to MSB
     byte 4 - which bus (0 = CAN0, 1 = CAN1, 2 = SWCAN, 3 = LIN1, 4 = LIN2)
     byte 5 - Frame length
     Byte 6-? - Data bytes
     Reply: As if the frame were received.
-    Example: F1 0A 11 11 F8 0A 02 03 00 45 00 00
+    Example: F1 0B 11 11 F8 0A 02 03 00 45 00 00
 
 Receiving a frame:
 There are three modes for frame reception:

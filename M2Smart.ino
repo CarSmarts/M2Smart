@@ -46,7 +46,7 @@ void setup() {
   setup_sys_io();
 
   driver = new BUSDriver();
-  comm = new CommController(Serial, driver);
+  comm = new CommController(driver);
 
   driver->setup();
   driver->setFrameCallback(frameCallback);
@@ -64,13 +64,12 @@ void loop() {
 
   for (int loops = 0; Serial.available() && loops < 128; loops++) {
     rx_byte = Serial.read();
-    SerialUSB.write(rx_byte);
-    // comm->read(Serial, rx_byte);
+    comm->read(&Serial, rx_byte);
   }
 
   for (int loops = 0; SerialUSB.available() && loops < 128; loops++) {
     rx_byte = SerialUSB.read();
-    comm->read(SerialUSB, rx_byte);
+    comm->read(&SerialUSB, rx_byte);
   }
 }
 #endif
