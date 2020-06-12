@@ -39,7 +39,7 @@ void setup() {
   sys_early_setup();
 
   Serial.begin(115200);
-  // Wire.begin();
+  // Wire.begin(); // for now disable EEPROM Access
   SPI.begin();
 
   sm.readSettings();

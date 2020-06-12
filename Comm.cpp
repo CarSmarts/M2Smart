@@ -278,7 +278,6 @@ void CommController::echoCanFrame(int in_byte) {
       // if (temp8 == in_byte)
       //{
       // toggleRXLED();
-      Logger::console("Sending Frame");
       sendFrameToUSB(build_out_frame, 0);
       //}
 
