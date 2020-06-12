@@ -28,7 +28,6 @@ void setup() {
   setup_pins();
   xbeeReset();
 
-  SerialUSB.begin(115200);
   Serial.begin(115200);
 
   sm.readSettings();

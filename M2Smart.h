@@ -66,6 +66,25 @@ void xbeePassthroughLoop() {
   }
 
   while (true) {
+    int xbee_rst_button_state = digitalRead(Button1);
+    int xbee_multi4_button_state = digitalRead(Button2);
+
+    if (xbee_rst_button_state == LOW) {
+      digitalWrite(DS2, LOW);
+      digitalWrite(XBEE_RST, LOW);
+    } else {
+      digitalWrite(DS2, HIGH);
+      digitalWrite(XBEE_RST, HIGH);
+    }
+
+    if (xbee_multi4_button_state == LOW) {
+      digitalWrite(DS3, LOW);
+      digitalWrite(XBEE_MULT4, LOW);
+    } else {
+      digitalWrite(DS3, HIGH);
+      digitalWrite(XBEE_MULT4, HIGH);
+    }
+
     if (SerialUSB.available() > 0) {
       rx_byte = SerialUSB.read();
       Serial.write(rx_byte);

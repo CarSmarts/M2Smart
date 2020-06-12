@@ -34,12 +34,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class SerialConsole {
 public:
-    SerialConsole(DriverBase &driver);
-    void printMenu(Print &out);
+    SerialConsole(DriverBase *driver);
+    void printMenu();
     void rcvCharacter(Print &out, uint8_t chr);
 
 protected:
-    DriverBase &_driver;
+    DriverBase *_driver;
 
 private:
     char cmdBuffer[80];

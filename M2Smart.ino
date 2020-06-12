@@ -18,11 +18,11 @@
 FileStore FS;
 
 SettingsManager sm;
-BUSDriver driver;
-CommController comm(Serial, driver);
+BUSDriver *driver;
+CommController *comm;
 
 // We need to define this function to be able to pass a function pointer to the attachInterrupt function.. There is no good way around it
-void SWCANCallback() { driver.SWCANIntHandler(); }
+void SWCANCallback() { driver->SWCANIntHandler(); }
 
 void frameCallback(CAN_FRAME &frame, BUSDriver::BUS whichBus) {
   // TODO: do something cool
@@ -30,16 +30,14 @@ void frameCallback(CAN_FRAME &frame, BUSDriver::BUS whichBus) {
   // if (digToggleSettings.enabled && (digToggleSettings.mode & 1) && (digToggleSettings.mode & 4)) processDigToggleFrame(incoming);
   // if (SysSettings.logToFile) sendFrameToFile(incoming, 1);
 
-  comm.sendFrameToUSB(frame, int(whichBus));
+  comm->sendFrameToUSB(frame, int(whichBus));
 }
 
 #ifndef TEST
 void setup() {
   setup_pins();
   sys_early_setup();
-  // xbeeReset();
 
-  SerialUSB.begin(115200);
   Serial.begin(115200);
   // Wire.begin();
   SPI.begin();
@@ -47,29 +45,32 @@ void setup() {
   sm.readSettings();
   setup_sys_io();
 
-  driver.setup();
-  driver.setFrameCallback(frameCallback);
+  driver = new BUSDriver();
+  comm = new CommController(Serial, driver);
+
+  driver->setup();
+  driver->setFrameCallback(frameCallback);
 
   // enable interrupt for SWCAN
-  // attachInterrupt(SWC_INT, SWCANCallback, FALLING);
+  attachInterrupt(SWC_INT, SWCANCallback, FALLING);
 }
 
 char rx_byte = 0;
 void loop() {
   update_buttons();
 
-  driver.loop();
-  comm.checkBuffer();
+  driver->loop();
+  comm->checkBuffer();
 
   for (int loops = 0; Serial.available() && loops < 128; loops++) {
     rx_byte = Serial.read();
-    comm.read(Serial, rx_byte);
     SerialUSB.write(rx_byte);
+    // comm->read(Serial, rx_byte);
   }
 
   for (int loops = 0; SerialUSB.available() && loops < 128; loops++) {
     rx_byte = SerialUSB.read();
-    comm.read(SerialUSB, rx_byte);
+    comm->read(SerialUSB, rx_byte);
   }
 }
 #endif

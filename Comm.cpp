@@ -231,10 +231,13 @@ void CommController::getCommandLoop(STATE_t &currentState, int in_byte) {
 }
 
 void CommController::echoCanFrame(int in_byte) {
+  Logger::console("Processing echo byte %X", in_byte);
   static CAN_FRAME build_out_frame;
   static int out_bus;
   static int step = 0;
   int temp8;
+
+  Logger::console("Step: %i", step);
 
   responseBuff[1 + step] = in_byte;
   switch (step) {
@@ -278,6 +281,7 @@ void CommController::echoCanFrame(int in_byte) {
       // if (temp8 == in_byte)
       //{
       // toggleRXLED();
+      Logger::console("Sending Frame");
       sendFrameToUSB(build_out_frame, 0);
       //}
 
@@ -338,7 +342,7 @@ void CommController::buildCanFrame(int in_byte) {
       temp8 = checksumCalc(responseBuff, step);
       build_out_frame.rtr = 0;
 
-      _driver.sendFrame(BUSDriver::BUS(out_bus), build_out_frame);
+      _driver->sendFrame(BUSDriver::BUS(out_bus), build_out_frame);
 
       currentState = IDLE;
       step = 0;
@@ -436,7 +440,7 @@ void CommController::setupCanBus(int in_byte) {
     // now, write out the new canbus settings to EEPROM
     sm.writeSettings();
     // force BUSDriver to reload settings from sm
-    _driver.setup();
+    _driver->setup();
 
     currentState = IDLE;
     step = 0;
@@ -573,7 +577,7 @@ void CommController::setupExtBuses(int in_byte) {
     // now, write out the new canbus settings to EEPROM
     sm.writeSettings();
     // force BUSDriver to reload settings from sm
-    _driver.setup();
+    _driver->setup();
 
     currentState = IDLE;
     step = 0;

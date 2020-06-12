@@ -35,16 +35,16 @@
 #include "settings.h"
 #include "sys_io.h"
 
-SerialConsole::SerialConsole(DriverBase &driver) : _driver(driver)
+SerialConsole::SerialConsole(DriverBase *driver) : _driver(driver)
 {
     //State variables for serial console
     ptrBuffer = 0;
 }
 
-void SerialConsole::printMenu(Print &out)
+void SerialConsole::printMenu()
 {
     char buff[80];
-    // Logger::setLogOut(out);
+    Print &out = Logger::getLogOut();
 
     //Show build # here as well in case people are using the native port and don't get to see the start up messages
     out.print("Build number: ");
@@ -161,7 +161,7 @@ void SerialConsole::handleShortCmd()
     case 'h':
     case '?':
     case 'H':
-        printMenu(SerialUSB);
+        printMenu();
         break;
     case 'R': //reset to factory defaults.
         sm.settings.version = 0xFF;
@@ -221,61 +221,61 @@ void SerialConsole::handleConfigCmd()
         if (newValue > 1) newValue = 1;
         Logger::console("Setting CAN0 Enabled to %i", newValue);
         sm.settings.CAN0_Enabled = newValue;
-        _driver.setup();
+        _driver->setup();
         writeEEPROM = true;
     } else if (cmdString == String("CAN1EN")) {
         if (newValue < 0) newValue = 0;
         if (newValue > 1) newValue = 1;
         Logger::console("Setting CAN1 Enabled to %i", newValue);
         sm.settings.CAN1_Enabled = newValue;
-        _driver.setup();
+        _driver->setup();
         writeEEPROM = true;
     } else if (cmdString == String("SWCANEN")) {
         if (newValue < 0) newValue = 0;
         if (newValue > 1) newValue = 1;
         Logger::console("Setting SWCAN Enabled to %i", newValue);
         sm.settings.SWCAN_Enabled = newValue;
-        _driver.setup();
+        _driver->setup();
         writeEEPROM = true;
     } else if (cmdString == String("CAN0SPEED")) {
         if (newValue > 0 && newValue <= 1000000) {
             Logger::console("Setting CAN0 Baud Rate to %i", newValue);
             sm.settings.CAN0Speed = newValue;
-            _driver.setup();
+            _driver->setup();
             writeEEPROM = true;
         } else Logger::console("Invalid baud rate! Enter a value 1 - 1000000");
     } else if (cmdString == String("CAN1SPEED")) {
         if (newValue > 0 && newValue <= 1000000) {
             Logger::console("Setting CAN1 Baud Rate to %i", newValue);
-            _driver.setup();
+            _driver->setup();
             writeEEPROM = true;
         } else Logger::console("Invalid baud rate! Enter a value 1 - 1000000");
     } else if (cmdString == String("SWCANSPEED")) {
         if (newValue > 0 && newValue <= 1000000) {
             Logger::console("Setting Single Wire CAN Baud Rate to %i", newValue);
             sm.settings.SWCANSpeed = newValue;
-            _driver.setup();
+            _driver->setup();
             writeEEPROM = true;
         } else Logger::console("Invalid baud rate! Enter a value 1 - 1000000");
     } else if (cmdString == String("CAN0LISTENONLY")) {
         if (newValue >= 0 && newValue <= 1) {
             Logger::console("Setting CAN0 Listen Only to %i", newValue);
             sm.settings.CAN0ListenOnly = newValue;
-            _driver.setup();
+            _driver->setup();
             writeEEPROM = true;
         } else Logger::console("Invalid setting! Enter a value 0 - 1");
     } else if (cmdString == String("CAN1LISTENONLY")) {
         if (newValue >= 0 && newValue <= 1) {
             Logger::console("Setting CAN1 Listen Only to %i", newValue);
             sm.settings.CAN1ListenOnly = newValue;
-            _driver.setup();
+            _driver->setup();
             writeEEPROM = true;
         } else Logger::console("Invalid setting! Enter a value 0 - 1");
     } else if (cmdString == String("SWCANLISTENONLY")) {
         if (newValue >= 0 && newValue <= 1) {
             Logger::console("Setting SWCAN Listen Only to %i", newValue);
             sm.settings.SWCANListenOnly = newValue;
-            _driver.setup();
+            _driver->setup();
             writeEEPROM = true;
         } else Logger::console("Invalid setting! Enter a value 0 - 1");        
     
@@ -549,7 +549,7 @@ bool SerialConsole::handleCANSend(DriverBase::BUS whichBus, char *inputString)
     else frame.extended = false;
     frame.rtr = 0;
     frame.length = lenVal;
-    _driver.sendFrame(whichBus, frame);
+    _driver->sendFrame(whichBus, frame);
     
     Logger::console("Sending frame with id: 0x%x len: %i", frame.id, frame.length);
     return true;

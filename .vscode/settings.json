@@ -9,6 +9,11 @@
         "utility": "cpp",
         "*.tcc": "cpp",
         "*.def": "cpp",
-        "condition_variable": "cpp"
+        "condition_variable": "cpp",
+        "istream": "cpp",
+        "__locale": "cpp",
+        "fstream": "cpp",
+        "sstream": "cpp",
+        "ostream": "cpp"
     }
 }

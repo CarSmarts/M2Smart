@@ -33,7 +33,7 @@
 
 boolean Logger::SDCardInserted = false;
 boolean Logger::logToggle = false;
-Print & Logger::logOut = SerialUSB;
+Print & Logger::logOut = Serial;
 
 Logger::LogLevel Logger::logLevel = Logger::Info;
 uint32_t Logger::lastLogTime = 0;

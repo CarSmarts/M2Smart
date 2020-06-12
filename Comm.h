@@ -44,7 +44,7 @@ private:
   };
 
   Print &_out;
-  DriverBase &_driver;
+  DriverBase *_driver;
   SerialConsole _console;
 
   // statemachine variables for reciving instructions
@@ -65,7 +65,7 @@ private:
   uint32_t lastFlushMicros = 0;
 
 public:
-  CommController(Print &out, DriverBase &driver) : _out(out), _driver(driver), _console(driver) { };
+  CommController(Print &out, DriverBase *driver) : _out(out), _driver(driver), _console(driver) { };
 
   /// call whenever there is a new input to process
   void read(Print &out, int in_byte);
